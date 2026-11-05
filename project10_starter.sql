@@ -325,8 +325,13 @@ call list_members();
 -- STEP 10. List every routine in club_db
 -- =================================================================
 
--- your comment goes here
--- your statements go here
+-- list every routine in club_db in order
+SELECT routine_name, routine_type
+FROM information_schema.routines
+WHERE routine_schema = 'club_db'
+ORDER BY routine_name;
+
+
 
 
 -- =================================================================
