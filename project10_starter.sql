@@ -180,16 +180,33 @@ SELECT * FROM payment_log;
 -- STEP 2. list_members
 -- =================================================================
 
--- your comment goes here
--- your statements go here
+-- create a list_members with no parameters
+CREATE PROCEDURE list_members()
+BEGIN
+    SELECT member_id, first_name, last_name, total_paid
+    FROM member
+    ORDER BY last_name;
+END;
+
+CALL list_members();
 
 
 -- =================================================================
 -- STEP 3. member_history, with an IN parameter
 -- =================================================================
 
--- your comment goes here
--- your statements go here
+-- create a member_history with one IN parameter
+CREATE PROCEDURE member_history(IN p_member_id INT)
+BEGIN
+    SELECT p.payment_id, p.amount, p.paid_on, p.method
+    FROM payment p
+    WHERE p.member_id = p_member_id;
+END;
+
+-- calling member_history with member_id 100 and 103
+-- to see their payment history
+CALL member_history(100);
+CALL member_history(103);
 
 
 -- =================================================================
@@ -198,8 +215,16 @@ SELECT * FROM payment_log;
 -- Copy the skeleton from the handout and write the INSERT.
 -- =================================================================
 
--- your comment goes here
--- your statements go here
+-- adds a new member
+-- adds a new member, who joins today
+CREATE PROCEDURE add_member(IN p_first VARCHAR(30),
+IN p_last VARCHAR(30))
+BEGIN
+-- store the new member, with today as the joining date
+    INSERT INTO member (first_name, last_name, joined_on)
+    VALUES (p_first, p_last, CURDATE());
+END;
+
 
 
 -- =================================================================
@@ -208,8 +233,16 @@ SELECT * FROM payment_log;
 -- Copy the skeleton and write the INSERT.
 -- =================================================================
 
--- your comment goes here
--- your statements go here
+-- adds a payment for a member
+-- takes a payment. the triggers do the bookkeeping
+CREATE PROCEDURE make_payment(IN p_member_id INT,
+IN p_amount DECIMAL(7,2),
+IN p_method VARCHAR(10))
+BEGIN
+-- store the payment and let the triggers do the rest
+    INSERT INTO payment (member_id, amount, method)
+    VALUES (p_member_id, p_amount, p_method);
+END;    
 
 
 -- =================================================================
@@ -218,24 +251,49 @@ SELECT * FROM payment_log;
 -- Most of this one is yours. The handout walks you through it.
 -- =================================================================
 
--- your comment goes here
--- your statements go here
-
+-- refunds a payment for a member
+CREATE PROCEDURE refund_payment(IN p_payment_id INT)
+BEGIN
+    DELETE FROM payment 
+    WHERE payment_id = p_payment_id;
+END;
 
 -- =================================================================
 -- STEP 7. Change list_members to show the biggest payers first
 -- =================================================================
 
--- your comment goes here
--- your statements go here
+-- change list_members 
+--shows the biggest payers
+--drop the list to create another one
+DROP PROCEDURE IF EXISTS list_members;
 
+CREATE PROCEDURE list_members()
+BEGIN
+    SELECT member_id, first_name, last_name, total_paid
+    FROM member
+    ORDER BY total_paid DESC;
+END;
+
+--shows the changes made to the list_members procedure
+CALL list_members();
 
 -- =================================================================
 -- STEP 8. Run the club for a day
 -- =================================================================
 
--- your comment goes here
--- your statements go here
+-- running the club by adding a new member
+CALL add_member('Imani', 'Brooks');
+CALL list_members();
+-- making a payment
+CALL make_payment(104, 50.00, 'card');
+CALL member_history(104);
+--and refunding a payment
+CALL refund_payment(5000);
+--calling list_members to see the changes
+CALL list_members();
+--selecting from payment_log to see the changes
+SELECT *
+FROM payment_log;
 
 
 -- =================================================================
@@ -244,9 +302,24 @@ SELECT * FROM payment_log;
 -- Under each call, a comment on what happened and what should have.
 -- =================================================================
 
--- your comment goes here
--- your statements go here
+-- calling member_history with a non-existent member_id
+CALL make_payment(999, 20.00, 'cash');
+--this failed because there is no member with id 999
+-- so the foreign key constraint prevented the payment from being added.
 
+CALL make_payment(103, 10.00, 'cash');
+--this worked because member 103 exists
+--so the payment was added successfully.
+CALL list_members();
+--the total_paid for member 103 increased by 10.00
+
+CALL refund_payment(7777);
+--this failed because there is no payment with id 7777
+
+--clean up Desmonds payment history
+CALL member_history(103);
+CALL make_payment(103, -10.00, 'cash');
+call list_members();
 
 -- =================================================================
 -- STEP 10. List every routine in club_db
